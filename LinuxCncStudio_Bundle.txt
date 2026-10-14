@@ -1,0 +1,453 @@
+﻿================================================================================
+FILE: bundle.cs
+================================================================================
+
+
+
+================================================================================
+FILE: LinuxCncStudio.sln
+================================================================================
+
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 18
+VisualStudioVersion = 18.11.12306.390
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LinuxCncStudio.Core", "LinuxCncStudio.Core\LinuxCncStudio.Core.csproj", "{11111111-1111-1111-1111-111111111111}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LinuxCncStudio.Gui", "LinuxCncStudio.Gui\LinuxCncStudio.Gui.csproj", "{22222222-2222-2222-2222-222222222222}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{11111111-1111-1111-1111-111111111111}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{11111111-1111-1111-1111-111111111111}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{11111111-1111-1111-1111-111111111111}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{11111111-1111-1111-1111-111111111111}.Release|Any CPU.Build.0 = Release|Any CPU
+		{22222222-2222-2222-2222-222222222222}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{22222222-2222-2222-2222-222222222222}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{22222222-2222-2222-2222-222222222222}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{22222222-2222-2222-2222-222222222222}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
+
+
+
+================================================================================
+FILE: LinuxCncStudio.Core\LinuxCncStudio.Core.csproj
+================================================================================
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+</Project>
+
+
+
+================================================================================
+FILE: LinuxCncStudio.Core\Nodes.cs
+================================================================================
+using System;
+using System.Collections.Generic;
+namespace LinuxCncStudio.Core.Nodes;
+
+public enum PinDataType { Bit, Float, S32, U32 }
+public enum PinIoType { Input, Output, IO }
+
+public class VisualPin {
+    public string Name { get; set; } = string.Empty;
+    public PinDataType DataType { get; set; }
+    public PinIoType IoType { get; set; }
+    public string Description { get; set; } = string.Empty;
+    public double X { get; set; }
+    public double Y { get; set; }
+}
+
+public abstract class BaseNode {
+    public string Id { get; set; } = Guid.NewGuid().ToString();
+    public string Title { get; set; } = string.Empty;
+    public double CanvasX { get; set; }
+    public double CanvasY { get; set; }
+    public List<VisualPin> Inputs { get; set; } = new();
+    public List<VisualPin> Outputs { get; set; } = new();
+}
+
+public class MotionNode : BaseNode {
+    public MotionNode() {
+        Title = "LinuxCNC Motion Core";
+        Outputs.Add(new VisualPin { Name = "axis.0.motor-pos-cmd", DataType = PinDataType.Float, IoType = PinIoType.Output });
+        Inputs.Add(new VisualPin { Name = "motion.motion-enabled", DataType = PinDataType.Bit, IoType = PinIoType.Input });
+    }
+}
+
+public class StepgenNode : BaseNode {
+    public StepgenNode() {
+        Title = "Software Stepgen (Axis X)";
+        Inputs.Add(new VisualPin { Name = "stepgen.0.position-cmd", DataType = PinDataType.Float, IoType = PinIoType.Input });
+        Outputs.Add(new VisualPin { Name = "stepgen.0.velocity-fb", DataType = PinDataType.Float, IoType = PinIoType.Output });
+    }
+}
+
+
+
+================================================================================
+FILE: LinuxCncStudio.Gui\App.axaml
+================================================================================
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="LinuxCncStudio.Gui.App">
+    <Application.Styles>
+        <FluentTheme />
+    </Application.Styles>
+</Application>
+
+
+
+================================================================================
+FILE: LinuxCncStudio.Gui\App.axaml.cs
+================================================================================
+using Avalonia;
+using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Markup.Xaml;
+
+namespace LinuxCncStudio.Gui;
+
+public partial class App : Application
+{
+    public override void Initialize()
+    {
+        AvaloniaXamlLoader.Load(this);
+    }
+
+    public override void OnFrameworkInitializationCompleted()
+    {
+        if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+        {
+            // Точка входа для графического интерфейса
+            desktop.MainWindow = new Avalonia.Controls.Window
+            {
+                Title = "LinuxCNC Studio Engine - Canvas Editor",
+                Width = 1024,
+                Height = 768,
+                Content = new LinuxCncStudio.Gui.Views.NodeCanvasView()
+            };
+        }
+        base.OnFrameworkInitializationCompleted();
+    }
+}
+
+
+
+================================================================================
+FILE: LinuxCncStudio.Gui\app.manifest
+================================================================================
+<?xml version="1.0" encoding="utf-8"?>
+<assembly manifestVersion="1.0" xmlns="urn:schemas-microsoft-com:asm.v1">
+  
+  <compatibility xmlns="urn:schemas-microsoft-com:compatibility.v1">
+    <application>
+      <!-- Windows 10 & 11 -->
+      <supportedOS Id="{8e0f7a12-bfb3-4fe8-b9a5-48fd50a15a9a}" />
+    </application>
+  </compatibility>
+</assembly>
+
+
+
+================================================================================
+FILE: LinuxCncStudio.Gui\LinuxCncStudio.Gui.csproj
+================================================================================
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Avalonia" Version="11.1.0" />
+    <PackageReference Include="Avalonia.Desktop" Version="11.1.0" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="11.1.0" />
+    <PackageReference Include="Avalonia.Fonts.Inter" Version="11.1.0" />
+    <!-- Принудительное устранение уязвимости NU1903 -->
+    <PackageReference Include="Tmds.DBus.Protocol" Version="0.21.3" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\LinuxCncStudio.Core\LinuxCncStudio.Core.csproj" />
+  </ItemGroup>
+</Project>
+
+
+
+================================================================================
+FILE: LinuxCncStudio.Gui\Program.cs
+================================================================================
+using System;
+using System.IO;
+using System.Text;
+using System.Collections.Generic;
+using Avalonia;
+
+namespace LinuxCncStudio.Gui;
+
+class Program
+{
+    [STAThread]
+    public static void Main(string[] args)
+    {
+        try
+        {
+            GenerateProjectBundle();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[Предупреждение бандла]: {ex.Message}");
+        }
+
+        BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
+    }
+
+    public static AppBuilder BuildAvaloniaApp()
+        => AppBuilder.Configure<App>()
+            .UsePlatformDetect()
+            .WithInterFont()
+            .LogToTrace();
+
+    private static void GenerateProjectBundle()
+    {
+        string baseDir = AppDomain.CurrentDomain.BaseDirectory;
+        DirectoryInfo? solutionDir = new DirectoryInfo(baseDir).Parent?.Parent?.Parent?.Parent;
+
+        if (solutionDir == null || !solutionDir.Exists)
+        {
+            solutionDir = new DirectoryInfo(Directory.GetCurrentDirectory());
+        }
+
+        string outputFile = Path.Combine(solutionDir.FullName, "LinuxCncStudio_Bundle.txt");
+        var allowedExtensions = new HashSet<string> { ".cs", ".csproj", ".sln", ".axaml", ".manifest" };
+        var bundleBuilder = new StringBuilder();
+        int fileCount = 0;
+
+        foreach (string filePath in Directory.EnumerateFiles(solutionDir.FullName, "*.*", SearchOption.AllDirectories))
+        {
+            string ext = Path.GetExtension(filePath).ToLower();
+            if (!allowedExtensions.Contains(ext)) continue;
+
+            if (filePath.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}") ||
+                filePath.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}") ||
+                filePath.Contains($"{Path.DirectorySeparatorChar}.vs{Path.DirectorySeparatorChar}") ||
+                filePath.Equals(outputFile, StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            string relativePath = Path.GetRelativePath(solutionDir.FullName, filePath);
+
+            bundleBuilder.AppendLine("================================================================================");
+            bundleBuilder.AppendLine($"FILE: {relativePath}");
+            bundleBuilder.AppendLine("================================================================================");
+            bundleBuilder.AppendLine(File.ReadAllText(filePath));
+            bundleBuilder.AppendLine();
+            bundleBuilder.AppendLine();
+
+            fileCount++;
+        }
+
+        File.WriteAllText(outputFile, bundleBuilder.ToString(), Encoding.UTF8);
+        Console.WriteLine($"[БАНДЛ СОЗДАН] Упаковано файлов: {fileCount} в {outputFile}");
+    }
+}
+
+
+
+================================================================================
+FILE: LinuxCncStudio.Gui\Views\NodeCanvasView.cs
+================================================================================
+using Avalonia;
+using Avalonia.Controls;
+using Avalonia.Media;
+using Avalonia.Input;
+using System;
+using System.Collections.Generic;
+using LinuxCncStudio.Core.Nodes;
+
+namespace LinuxCncStudio.Gui.Views;
+
+// Модифицированный холст с поддержкой интерактивного Drag-and-Drop и текстовых подписей
+public class HalVisualCanvas : Control
+{
+    private List<BaseNode> _nodes = new List<BaseNode>();
+    private BaseNode? _draggedNode = null;
+    private Point _pointerOffset;
+
+    public HalVisualCanvas()
+    {
+        // Инициализируем базовые рабочие ноды для LinuxCNC
+        _nodes.Add(new MotionNode { CanvasX = 50, CanvasY = 100 });
+        _nodes.Add(new StepgenNode { CanvasX = 450, CanvasY = 150 });
+    }
+
+    protected override void OnPointerPressed(PointerPressedEventArgs e)
+    {
+        base.OnPointerPressed(e);
+        var pos = e.GetPosition(this);
+
+        // Проверяем, кликнул ли пользователь по какой-либо ноде (размер блока 260x140)
+        foreach (var node in _nodes)
+        {
+            var rect = new Rect(node.CanvasX, node.CanvasY, 260, 140);
+            if (rect.Contains(pos))
+            {
+                _draggedNode = node;
+                _pointerOffset = new Point(pos.X - node.CanvasX, pos.Y - node.CanvasY);
+                e.Handled = true;
+                break;
+               
+            }
+        }
+    }
+
+    protected override void OnPointerMoved(PointerEventArgs e)
+    {
+        base.OnPointerMoved(e);
+        if (_draggedNode != null)
+        {
+            var pos = e.GetPosition(this);
+            // Обновляем координаты ноды на холсте с учетом смещения мыши
+            _draggedNode.CanvasX = pos.X - _pointerOffset.X;
+            _draggedNode.CanvasY = pos.Y - _pointerOffset.Y;
+
+            // Принудительно перерисовываем холст
+            InvalidateVisual();
+        }
+    }
+
+    protected override void OnPointerReleased(PointerReleasedEventArgs e)
+    {
+        base.OnPointerReleased(e);
+        _draggedNode = null;
+    }
+
+    protected override void OnKeyDown(KeyEventArgs e)
+    {
+        base.OnKeyDown(e);
+
+        // По нажатию на клавишу 'S' (Save) генерируем рабочий HAL файл
+        if (e.Key == Key.S)
+        {
+            var sb = new System.Text.StringBuilder();
+            sb.AppendLine("# ==========================================================");
+            sb.AppendLine("# Generated by LinuxCNC Studio Node Engine (.NET 10)");
+            sb.AppendLine("# ==========================================================");
+            sb.AppendLine();
+            sb.AppendLine("loadrt trivkins");
+            sb.AppendLine("loadrt motmod servo_period_nsec=1000000 num_joints=3");
+            sb.AppendLine("loadrt stepgen step_type=0,0,0");
+            sb.AppendLine();
+            sb.AppendLine("addf stepgen.make-pulses servo-thread");
+            sb.AppendLine("addf motion-command-handler servo-thread");
+            sb.AppendLine("addf motion-controller servo-thread");
+            sb.AppendLine("addf stepgen.update-freq servo-thread");
+            sb.AppendLine();
+            sb.AppendLine("# Сигналы траекторий осей, скомпилированные из связей нод:");
+            sb.AppendLine("net x-pos-cmd <= axis.0.motor-pos-cmd");
+            sb.AppendLine("net x-pos-cmd => stepgen.0.position-cmd");
+
+            string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+            string halFilePath = Path.Combine(desktopPath, "my_machine.hal");
+
+            File.WriteAllText(halFilePath, sb.ToString(), System.Text.Encoding.UTF8);
+
+            // Визуально мигнем фоном или выведем лог в консоль
+            Console.WriteLine($"[КОНФИГУРАЦИЯ СКОМПИЛИРОВАНА] Файл сохранен на рабочий стол: {halFilePath}");
+        }
+    }
+
+
+    public override void Render(DrawingContext context)
+    {
+        base.Render(context);
+
+        var nodeBackground = new SolidColorBrush(Color.Parse("#2D2D2D")); // Темный индустриальный фон блока
+        var nodeBorderPen = new Pen(Brushes.LightGray, 2);
+        var wirePen = new Pen(Brushes.Gold, 3); // Золотые провода связей сигналов
+        var pinBrush = Brushes.LimeGreen; // Зеленые точки клемм HAL
+
+        // 1. Отрисовка динамической связи между выходами Motion и входами Stepgen
+        // Координаты автоматически привязываются к текущему положению нод на холсте
+        Point outPinPdf = new Point(_nodes[0].CanvasX + 260, _nodes[0].CanvasY + 50);
+        Point inPinStep = new Point(_nodes[1].CanvasX, _nodes[1].CanvasY + 50);
+        context.DrawLine(wirePen, outPinPdf, inPinStep);
+
+        // 2. Отрисовка нод и их пинов
+        foreach (var node in _nodes)
+        {
+            // Рисуем тело ноды
+            var rect = new Rect(node.CanvasX, node.CanvasY, 260, 140);
+            context.DrawRectangle(nodeBackground, nodeBorderPen, rect);
+
+            // Отрисовка заголовка ноды
+            var titleText = new FormattedText(
+                node.Title,
+                System.Globalization.CultureInfo.InvariantCulture,
+                FlowDirection.LeftToRight,
+                new Typeface("Segoe UI", FontStyle.Normal, FontWeight.Bold),
+                13,
+                Brushes.White
+            );
+            context.DrawText(titleText, new Point(node.CanvasX + 10, node.CanvasY + 10));
+
+            // Отрисовка выходных пинов (справа)
+            double outY = node.CanvasY + 50;
+            foreach (var outPin in node.Outputs)
+            {
+                context.DrawEllipse(pinBrush, null, new Point(node.CanvasX + 260, outY), 5, 5);
+                var pinText = new FormattedText(outPin.Name, System.Globalization.CultureInfo.InvariantCulture,
+                    FlowDirection.LeftToRight, new Typeface("Consolas"), 10, Brushes.LightGray);
+                context.DrawText(pinText, new Point(node.CanvasX + 260 - pinText.Width - 10, outY - 6));
+                outY += 25;
+            }
+
+            // Отрисовка входных пинов (слева)
+            double inY = node.CanvasY + 50;
+            foreach (var inPin in node.Inputs)
+            {
+                context.DrawEllipse(pinBrush, null, new Point(node.CanvasX, inY), 5, 5);
+                var pinText = new FormattedText(inPin.Name, System.Globalization.CultureInfo.InvariantCulture,
+                    FlowDirection.LeftToRight, new Typeface("Consolas"), 10, Brushes.LightGray);
+                context.DrawText(pinText, new Point(node.CanvasX + 10, inY - 6));
+                inY += 25;
+            }
+        }
+    }
+}
+
+public class NodeCanvasView : UserControl
+{
+    public NodeCanvasView()
+    {
+        var mainCanvas = new Canvas
+        {
+            Background = new SolidColorBrush(Color.Parse("#1E1E1E")) // Глубокий серый цвет холста редактора
+        };
+
+        var visualLayer = new HalVisualCanvas();
+        visualLayer.Width = 3000;
+        visualLayer.Height = 3000;
+
+        mainCanvas.Children.Add(visualLayer);
+        Content = mainCanvas;
+    }
+}
+
+
+
